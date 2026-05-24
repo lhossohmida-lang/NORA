@@ -157,9 +157,7 @@ function Sidebar({ section, onPick, onSignOut }) {
     <aside className="hidden md:flex w-64 shrink-0 min-h-screen bg-white/60 backdrop-blur-xl border-l border-cream flex-col">
       <div className="p-6 border-b border-cream">
         <Link to="/" className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-sage-blush flex items-center justify-center text-white">
-            <Sparkles className="w-5 h-5" />
-          </div>
+          <img src="/logo.png" alt="أفنان" className="w-10 h-10 rounded-full object-cover shadow-soft border border-cream" />
           <div>
             <p className="font-display text-2xl leading-none">أفنان</p>
             <p className="text-[10px] text-ink/50 mt-0.5">لوحة الإدارة</p>

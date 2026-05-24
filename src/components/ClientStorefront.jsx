@@ -270,9 +270,7 @@ function Header({ scrolled, cartCount, favCount, search, onSearch, onOpenCart, o
     >
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 flex items-center gap-3">
         <Link to="/" className="flex items-center gap-2 shrink-0">
-          <div className="w-9 h-9 rounded-full bg-sage-blush flex items-center justify-center text-white shadow-soft">
-            <Sparkles className="w-4 h-4" />
-          </div>
+          <img src="/logo.png" alt="أفنان" className="w-9 h-9 rounded-full object-cover shadow-soft border border-cream" />
           <div className="leading-tight">
             <h1 className="font-display text-xl text-ink">{STORE_NAME}</h1>
             <p className="text-[10px] text-ink/50 font-display italic -mt-1">Afnan</p>
