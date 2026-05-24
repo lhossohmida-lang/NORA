@@ -45,6 +45,7 @@ export default function SplashScreen({ onFinish }) {
             autoPlay
             muted
             playsInline
+            onEnded={dismiss}
             className="absolute inset-0 w-full h-full object-cover opacity-80"
             onError={() => { /* video missing — let the gradient layer show */ }}
           />
