@@ -382,14 +382,28 @@ function Hero({ onShopNow }) {
  *  Category chips                                                     *
  * ================================================================== */
 function CategoryChips({ active, onChange, onJumpToGrid }) {
+  const [meltingKey, setMeltingKey] = useState(null);
+
+  const handleClick = (key) => {
+    setMeltingKey(key);
+    // Snappy melt animation for chips (450ms)
+    setTimeout(() => {
+      onChange(key);
+      onJumpToGrid?.();
+      setMeltingKey(null);
+    }, 450);
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-8 mt-6 md:mt-10 mb-6">
       <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 py-1">
         {CATEGORIES.map((c) => (
           <button
             key={c.key}
-            onClick={() => { onChange(c.key); onJumpToGrid?.(); }}
-            className={`chip ${active === c.key ? 'chip-on' : 'chip-off'}`}
+            onClick={() => handleClick(c.key)}
+            className={`chip ${active === c.key ? 'chip-on' : 'chip-off'} ${
+              meltingKey === c.key ? 'animate-ice-melt' : ''
+            }`}
           >
             <span className="mr-1">{c.icon}</span>
             {c.label}
@@ -448,26 +462,52 @@ function ErrorState({ message }) {
  *  Bottom navigation                                                  *
  * ================================================================== */
 function BottomNav({ cartCount, favCount, onHome, onCategories, onFav, onCart, onProfile }) {
-  const Item = ({ icon: Icon, label, onClick, badge }) => (
-    <button onClick={onClick} className="relative flex flex-col items-center gap-1 flex-1 py-2 text-ink/70 active:scale-95 transition">
-      <Icon className="w-5 h-5" />
-      <span className="text-[10px] font-medium">{label}</span>
-      {badge > 0 && (
-        <span className="absolute top-1 right-1/2 translate-x-4 min-w-[16px] h-4 px-1 rounded-full bg-sage-blush text-white text-[9px] font-bold flex items-center justify-center">
-          {badge}
-        </span>
-      )}
-    </button>
-  );
+  const [meltingKey, setMeltingKey] = useState(null);
+
+  const Item = ({ id, icon: Icon, label, onClick, badge }) => {
+    const isMelting = meltingKey === id;
+
+    const handleItemClick = (e) => {
+      e.preventDefault();
+      setMeltingKey(id);
+      
+      // Play snappy melting animation (450ms)
+      setTimeout(() => {
+        onClick();
+        
+        // Refreeze back smoothly so it's ready for the next click
+        setTimeout(() => {
+          setMeltingKey(null);
+        }, 300);
+      }, 450);
+    };
+
+    return (
+      <button
+        onClick={handleItemClick}
+        className={`relative flex flex-col items-center gap-1 flex-1 py-2 text-ink/70 transition-all rounded-2xl ${
+          isMelting ? 'animate-ice-melt' : 'active:scale-95'
+        }`}
+      >
+        <Icon className="w-5 h-5" />
+        <span className="text-[10px] font-medium">{label}</span>
+        {badge > 0 && (
+          <span className="absolute top-1 right-1/2 translate-x-4 min-w-[16px] h-4 px-1 rounded-full bg-sage-blush text-white text-[9px] font-bold flex items-center justify-center">
+            {badge}
+          </span>
+        )}
+      </button>
+    );
+  };
 
   return (
     <nav className="fixed bottom-3 inset-x-3 z-30">
       <div className="glass rounded-full px-2 py-1 flex items-center safe-bottom">
-        <Item icon={Home} label="الرئيسية" onClick={onHome} />
-        <Item icon={LayoutGrid} label="الفئات" onClick={onCategories} />
-        <Item icon={Heart} label="المفضّلة" onClick={onFav} badge={favCount} />
-        <Item icon={ShoppingBag} label="السلّة" onClick={onCart} badge={cartCount} />
-        <Item icon={User} label="حسابي" onClick={onProfile} />
+        <Item id="home" icon={Home} label="الرئيسية" onClick={onHome} />
+        <Item id="categories" icon={LayoutGrid} label="الفئات" onClick={onCategories} />
+        <Item id="fav" icon={Heart} label="المفضّلة" onClick={onFav} badge={favCount} />
+        <Item id="cart" icon={ShoppingBag} label="السلّة" onClick={onCart} badge={cartCount} />
+        <Item id="profile" icon={User} label="حسابي" onClick={onProfile} />
       </div>
     </nav>
   );
@@ -651,14 +691,27 @@ function InfoRow({ icon: Icon, label, value }) {
 }
 
 function CategoriesSheet({ open, active, onPick, onClose }) {
+  const [meltingKey, setMeltingKey] = useState(null);
+
+  const handlePick = (key) => {
+    setMeltingKey(key);
+    // Snappy melt animation for dialog items (450ms)
+    setTimeout(() => {
+      onPick(key);
+      setMeltingKey(null);
+    }, 450);
+  };
+
   return (
     <SheetShell open={open} onClose={onClose} title="الفئات">
       <div className="grid grid-cols-2 gap-3 p-5">
         {CATEGORIES.map((c) => (
           <button
             key={c.key}
-            onClick={() => onPick(c.key)}
-            className={`card p-5 text-center transition ${active === c.key ? 'ring-2 ring-sage' : ''}`}
+            onClick={() => handlePick(c.key)}
+            className={`card p-5 text-center transition ${
+              active === c.key ? 'ring-2 ring-sage' : ''
+            } ${meltingKey === c.key ? 'animate-ice-melt' : ''}`}
           >
             <div className="text-3xl mb-2">{c.icon}</div>
             <p className="font-bold">{c.label}</p>

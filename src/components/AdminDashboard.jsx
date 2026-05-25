@@ -153,6 +153,17 @@ export default function AdminDashboard() {
  *  Sidebar                                                            *
  * ================================================================== */
 function Sidebar({ section, onPick, onSignOut }) {
+  const [meltingKey, setMeltingKey] = useState(null);
+
+  const handlePick = (key) => {
+    setMeltingKey(key);
+    // Snappy melt animation for navigation slots (450ms)
+    setTimeout(() => {
+      onPick(key);
+      setMeltingKey(null);
+    }, 450);
+  };
+
   return (
     <aside className="hidden md:flex w-64 shrink-0 min-h-screen bg-white/60 backdrop-blur-xl border-l border-cream flex-col">
       <div className="p-6 border-b border-cream">
@@ -172,10 +183,10 @@ function Sidebar({ section, onPick, onSignOut }) {
           return (
             <button
               key={s.key}
-              onClick={() => onPick(s.key)}
+              onClick={() => handlePick(s.key)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition ${
                 on ? 'bg-sage-blush text-white shadow-soft' : 'text-ink/70 hover:bg-cream'
-              }`}
+              } ${meltingKey === s.key ? 'animate-ice-melt' : ''}`}
             >
               <Icon className="w-4 h-4" />
               {s.label}

@@ -10,6 +10,7 @@
  * Animations live on the card itself (initial/animate); the parent grid
  * is intentionally a simple <section> with no orchestration variants.
  */
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Heart, ImageIcon } from 'lucide-react';
 
@@ -19,18 +20,36 @@ const formatDZD = (n) =>
 export default function ProductGridCard({ product, isFavorite, onToggleFav, onOpen, index = 0 }) {
   const cover = product.images?.[0];
   const count = product.images?.length || 0;
+  const [animationClass, setAnimationClass] = useState('');
+
+  const handleOpen = (e) => {
+    e.preventDefault();
+    setAnimationClass('animate-ice-melt');
+    // Wait for melting keyframe animation (0.85s)
+    setTimeout(() => {
+      onOpen();
+      // Prepare the refreezing animation once open
+      setTimeout(() => {
+        setAnimationClass('animate-ice-refreeze');
+        // Reset completely after refreeze finishes (0.6s)
+        setTimeout(() => {
+          setAnimationClass('');
+        }, 600);
+      }, 400);
+    }, 850);
+  };
 
   return (
     <motion.article
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: Math.min(index * 0.04, 0.4), ease: [0.16, 1, 0.3, 1] }}
-      whileHover={{ y: -4 }}
+      whileHover={animationClass ? {} : { y: -4 }}
       className="group relative"
     >
       <button
-        onClick={onOpen}
-        className="card block w-full text-right focus:outline-none focus:ring-2 focus:ring-sage/40"
+        onClick={handleOpen}
+        className={`card block w-full text-right focus:outline-none focus:ring-2 focus:ring-sage/40 ${animationClass}`}
         aria-label={`عرض ${product.nameAr}`}
       >
         <div className="relative aspect-[3/4] bg-cream overflow-hidden">
