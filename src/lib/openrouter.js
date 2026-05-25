@@ -85,27 +85,69 @@ export async function withRetry(fn, { maxAttempts = 3 } = {}) {
  * Streaming chat completion. Calls `onDelta(text)` for each incoming chunk
  * and resolves with the full assembled text.
  */
+/**
+ * Streaming chat completion. Calls `onDelta(text)` for each incoming chunk
+ * and resolves with the full assembled text.
+ * Sequentially attempts a list of stable free models on OpenRouter with a 10s timeout.
+ */
 export async function chatStream({ messages, onDelta, signal, temperature = 0.7, model = OPENROUTER_MODEL }) {
   const key = await getOrFetchApiKey();
   if (!key) {
     throw new Error('مفتاح OpenRouter غير مُعرّف. يرجى إضافته في لوحة التحكم الإدارية أو في ملف .env باسم VITE_OPENROUTER_API_KEY.');
   }
   client.apiKey = key;
-  return withRetry(async () => {
-    const stream = await client.chat.completions.create(
-      { model, messages, stream: true, temperature },
-      { signal },
-    );
-    let full = '';
-    for await (const chunk of stream) {
-      const delta = chunk.choices?.[0]?.delta?.content || '';
-      if (delta) {
-        full += delta;
-        onDelta?.(delta, full);
+
+  // Build the list of models to try sequentially
+  const modelsToTry = [
+    'google/gemma-2-9b-it:free',
+    'meta-llama/llama-3-8b-instruct:free',
+    'qwen/qwen-2-7b-instruct:free',
+    'arcee-ai/trinity-large-thinking:free'
+  ];
+  
+  // Put requested model first if not already there
+  if (model && !modelsToTry.includes(model)) {
+    modelsToTry.unshift(model);
+  } else if (model && modelsToTry.includes(model)) {
+    // Reorder so that 'model' is first
+    const idx = modelsToTry.indexOf(model);
+    modelsToTry.splice(idx, 1);
+    modelsToTry.unshift(model);
+  }
+
+  let lastError = null;
+  for (const currentModel of modelsToTry) {
+    try {
+      console.log(`Attempting chatStream with model: ${currentModel}`);
+      const stream = await client.chat.completions.create(
+        { model: currentModel, messages, stream: true, temperature },
+        { signal, timeout: 10000 }
+      );
+      
+      let full = '';
+      for await (const chunk of stream) {
+        const delta = chunk.choices?.[0]?.delta?.content || '';
+        if (delta) {
+          full += delta;
+          onDelta?.(delta, full);
+        }
+      }
+      return full; // Succeeded!
+    } catch (err) {
+      console.warn(`Model ${currentModel} failed in chatStream:`, err);
+      lastError = err;
+      if (signal?.aborted) {
+        throw err; // User aborted the request, do not try other models
       }
     }
-    return full;
-  });
+  }
+
+  // If all models failed, throw a friendly Arabic error
+  const status = lastError?.status || lastError?.response?.status;
+  if (status === 429) throw new Error('الخدمة مشغولة حالياً، يرجى المحاولة بعد لحظة.');
+  if (status === 503 || status === 502) throw new Error('الخادم متعب حالياً، يرجى المحاولة بعد دقيقة.');
+  if (status === 401) throw new Error('مفتاح الـ AI غير صحيح أو منتهي الصلاحية. يرجى التحقق من لوحة الإدارة.');
+  throw new Error(lastError?.message || 'حدث خطأ غير متوقع في الاتصال بالذكاء الاصطناعي.');
 }
 
 /** Non-streaming variant used when we just need the final string. */
@@ -115,10 +157,42 @@ export async function chatOnce({ messages, temperature = 0.6, model = OPENROUTER
     throw new Error('مفتاح OpenRouter غير مُعرّف. يرجى إضافته في لوحة التحكم الإدارية.');
   }
   client.apiKey = key;
-  return withRetry(async () => {
-    const res = await client.chat.completions.create({ model, messages, temperature });
-    return res.choices?.[0]?.message?.content || '';
-  });
+
+  const modelsToTry = [
+    'google/gemma-2-9b-it:free',
+    'meta-llama/llama-3-8b-instruct:free',
+    'qwen/qwen-2-7b-instruct:free',
+    'arcee-ai/trinity-large-thinking:free'
+  ];
+  
+  if (model && !modelsToTry.includes(model)) {
+    modelsToTry.unshift(model);
+  } else if (model && modelsToTry.includes(model)) {
+    const idx = modelsToTry.indexOf(model);
+    modelsToTry.splice(idx, 1);
+    modelsToTry.unshift(model);
+  }
+
+  let lastError = null;
+  for (const currentModel of modelsToTry) {
+    try {
+      console.log(`Attempting chatOnce with model: ${currentModel}`);
+      const res = await client.chat.completions.create(
+        { model: currentModel, messages, temperature },
+        { timeout: 10000 }
+      );
+      return res.choices?.[0]?.message?.content || '';
+    } catch (err) {
+      console.warn(`Model ${currentModel} failed in chatOnce:`, err);
+      lastError = err;
+    }
+  }
+
+  const status = lastError?.status || lastError?.response?.status;
+  if (status === 429) throw new Error('الخدمة مشغولة حالياً، يرجى المحاولة بعد لحظة.');
+  if (status === 503 || status === 502) throw new Error('الخادم متعب حالياً، يرجى المحاولة بعد دقيقة.');
+  if (status === 401) throw new Error('مفتاح الـ AI غير صحيح أو منتهي الصلاحية. يرجى التحقق من لوحة الإدارة.');
+  throw new Error(lastError?.message || 'حدث خطأ غير متوقع في الاتصال بالذكاء الاصطناعي.');
 }
 
 /** Strip ```json fences from a model response before JSON.parse. */
