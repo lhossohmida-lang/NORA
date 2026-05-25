@@ -30,5 +30,13 @@ service cloud.firestore {
       allow create: if true;
       allow read, update, delete: if isAdmin();
     }
+
+    // settings:
+    // - Read: Accessible to anyone so the AI assistant (client and admin side) can retrieve the OpenRouter key.
+    // - Write: Restricted to authenticated admins to manage configurations.
+    match /settings/{settingsId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
   }
 }

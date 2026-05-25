@@ -13,15 +13,41 @@
  * with 1s/2s backoff and surfaces Arabic-friendly errors.
  */
 import OpenAI from 'openai';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '../firebase.js';
 
 export const OPENROUTER_MODEL = 'arcee-ai/trinity-large-thinking:free';
 
-const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+let resolvedApiKey = import.meta.env.VITE_OPENROUTER_API_KEY || '';
+let hasAttemptedFetch = false;
 
-export const isOpenRouterConfigured = () => Boolean(apiKey);
+export async function getOrFetchApiKey() {
+  if (resolvedApiKey && resolvedApiKey !== 'missing-key') return resolvedApiKey;
+  if (hasAttemptedFetch) return resolvedApiKey;
+
+  try {
+    const docRef = doc(db, 'settings', 'openrouter');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      resolvedApiKey = docSnap.data().apiKey || '';
+    }
+  } catch (err) {
+    console.error('Error fetching API key from Firestore:', err);
+  }
+  hasAttemptedFetch = true;
+  return resolvedApiKey;
+}
+
+export async function saveApiKeyToFirestore(key) {
+  const docRef = doc(db, 'settings', 'openrouter');
+  await setDoc(docRef, { apiKey: key }, { merge: true });
+  resolvedApiKey = key;
+}
+
+export const isOpenRouterConfigured = () => Boolean(resolvedApiKey);
 
 const client = new OpenAI({
-  apiKey: apiKey || 'missing-key',
+  apiKey: resolvedApiKey || 'missing-key',
   baseURL: 'https://openrouter.ai/api/v1',
   dangerouslyAllowBrowser: true,
   defaultHeaders: {
@@ -60,9 +86,11 @@ export async function withRetry(fn, { maxAttempts = 3 } = {}) {
  * and resolves with the full assembled text.
  */
 export async function chatStream({ messages, onDelta, signal, temperature = 0.7, model = OPENROUTER_MODEL }) {
-  if (!isOpenRouterConfigured()) {
-    throw new Error('مفتاح OpenRouter غير مُعرّف. أضيفيه في .env باسم VITE_OPENROUTER_API_KEY.');
+  const key = await getOrFetchApiKey();
+  if (!key) {
+    throw new Error('مفتاح OpenRouter غير مُعرّف. يرجى إضافته في لوحة التحكم الإدارية أو في ملف .env باسم VITE_OPENROUTER_API_KEY.');
   }
+  client.apiKey = key;
   return withRetry(async () => {
     const stream = await client.chat.completions.create(
       { model, messages, stream: true, temperature },
@@ -82,9 +110,11 @@ export async function chatStream({ messages, onDelta, signal, temperature = 0.7,
 
 /** Non-streaming variant used when we just need the final string. */
 export async function chatOnce({ messages, temperature = 0.6, model = OPENROUTER_MODEL }) {
-  if (!isOpenRouterConfigured()) {
-    throw new Error('مفتاح OpenRouter غير مُعرّف.');
+  const key = await getOrFetchApiKey();
+  if (!key) {
+    throw new Error('مفتاح OpenRouter غير مُعرّف. يرجى إضافته في لوحة التحكم الإدارية.');
   }
+  client.apiKey = key;
   return withRetry(async () => {
     const res = await client.chat.completions.create({ model, messages, temperature });
     return res.choices?.[0]?.message?.content || '';

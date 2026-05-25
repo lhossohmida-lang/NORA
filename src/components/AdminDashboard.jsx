@@ -25,7 +25,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, ShoppingBag, Package, Wand2, Search, LogOut,
   Plus, Pencil, Trash2, Loader2, Sparkles, TrendingUp, Image as ImageIcon,
-  Eye, X, Save, ChevronLeft,
+  Eye, X, Save, ChevronLeft, EyeOff, Key, CheckCircle,
 } from 'lucide-react';
 import {
   collection, deleteDoc, doc, onSnapshot, orderBy, query, updateDoc, serverTimestamp,
@@ -33,7 +33,7 @@ import {
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '../firebase.js';
 import { PRODUCT_CATEGORIES, categoryLabel } from './ClientStorefront.jsx';
-import { generateProductContent } from '../lib/openrouter.js';
+import { generateProductContent, getOrFetchApiKey, saveApiKeyToFirestore } from '../lib/openrouter.js';
 import AdminAIAssistant from './AdminAIAssistant.jsx';
 
 const formatDZD = (n) =>
@@ -687,6 +687,135 @@ function AIStudioPanel() {
         <Tip icon={Sparkles} title="كلمات مفتاحية دقيقة" body="استخدمي صفات مثل: 'قفطان مخمل ذهبي للأعراس' للحصول على أفضل توليد." />
         <Tip icon={ImageIcon} title="3-5 صور لكل منتج" body="صور بإضاءة طبيعية وخلفية بسيطة تعطي نتائج أحلى في الكتالوغ." />
         <Tip icon={Eye} title="راجعي قبل النشر" body="الـ AI يقترح فقط — أنتِ تقرّرين الاسم النهائي والوصف." />
+      </div>
+
+      <OpenRouterSettingsCard />
+    </div>
+  );
+}
+
+function OpenRouterSettingsCard() {
+  const [key, setKey] = useState('');
+  const [visible, setVisible] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const fetched = await getOrFetchApiKey();
+        if (fetched && fetched !== 'missing-key') {
+          setKey(fetched);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  const handleSave = async () => {
+    setError(null);
+    setSaving(true);
+    setSuccess(false);
+    try {
+      if (!key.trim()) {
+        throw new Error('يرجى إدخال مفتاح صالح.');
+      }
+      await saveApiKeyToFirestore(key.trim());
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      setError(err.message || 'حدث خطأ أثناء الحفظ.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="card p-6 animate-pulse space-y-4">
+        <div className="h-5 w-1/3 bg-cream rounded" />
+        <div className="h-10 bg-cream rounded" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="card p-6 border border-cream bg-white/70 backdrop-blur-md relative overflow-hidden space-y-4">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-2xl bg-sage-blush text-white flex items-center justify-center">
+          <Key className="w-5 h-5" />
+        </div>
+        <div>
+          <h3 className="font-bold text-ink text-base">إعدادات مفتاح الذكاء الاصطناعي (API Key)</h3>
+          <p className="text-xs text-ink/50 mt-0.5">تفعيل ميزات الـ AI في رابط Vercel والاستضافة الخارجية</p>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-xs font-semibold text-ink/75 block">OpenRouter API Key</label>
+        <div className="relative flex items-center">
+          <input
+            type={visible ? 'text' : 'password'}
+            value={key}
+            onChange={(e) => setKey(e.target.value)}
+            placeholder="sk-or-v1-..."
+            className="w-full rounded-2xl bg-white border border-cream pr-4 pl-12 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sage/40 transition font-mono text-left"
+            dir="ltr"
+          />
+          <button
+            type="button"
+            onClick={() => setVisible(!visible)}
+            className="absolute left-3 p-1.5 rounded-full hover:bg-cream text-ink/50 transition"
+          >
+            {visible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
+        </div>
+        <p className="text-[11px] text-ink/50">
+          نحن نستخدم OpenRouter لتوفير خدمات الذكاء الاصطناعي. يمكنك الحصول على مفتاح مجاني أو مدفوع من موقع{' '}
+          <a
+            href="https://openrouter.ai/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sage font-semibold underline hover:text-blush transition"
+          >
+            openrouter.ai
+          </a>.
+        </p>
+      </div>
+
+      {error && <p className="text-xs text-blush font-medium">{error}</p>}
+
+      <div className="flex items-center justify-between pt-2">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="btn-primary px-6 py-2.5 rounded-2xl flex items-center gap-2 text-sm"
+        >
+          {saving ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : success ? (
+            <CheckCircle className="w-4 h-4" />
+          ) : (
+            <Save className="w-4 h-4" />
+          )}
+          {saving ? 'جاري الحفظ...' : success ? 'تم الحفظ بنجاح!' : 'حفظ المفتاح'}
+        </button>
+
+        {success && (
+          <motion.span
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="text-xs text-sage font-medium"
+          >
+            تم تحديث المفتاح وتفعيل الـ AI فوراً!
+          </motion.span>
+        )}
       </div>
     </div>
   );
