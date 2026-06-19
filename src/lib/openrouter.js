@@ -2,7 +2,7 @@
  * OpenRouter client — Afnan
  *
  * Uses the OpenAI SDK with a custom baseURL pointing at OpenRouter.
- * Model: arcee-ai/trinity-large-thinking:free
+ * Model: cohere/north-mini-code:free
  *
  * Exposes:
  *   - chatStream({ messages, onDelta, signal })  → streaming chat completion
@@ -16,7 +16,7 @@ import OpenAI from 'openai';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase.js';
 
-export const OPENROUTER_MODEL = 'arcee-ai/trinity-large-thinking:free';
+export const OPENROUTER_MODEL = 'cohere/north-mini-code:free';
 
 let resolvedApiKey = import.meta.env.VITE_OPENROUTER_API_KEY || '';
 let hasAttemptedFetch = false;
@@ -102,7 +102,7 @@ export async function chatStream({ messages, onDelta, signal, temperature = 0.7,
     'google/gemma-2-9b-it:free',
     'meta-llama/llama-3-8b-instruct:free',
     'qwen/qwen-2-7b-instruct:free',
-    'arcee-ai/trinity-large-thinking:free'
+    'cohere/north-mini-code:free'
   ];
   
   // Put requested model first if not already there
@@ -162,7 +162,7 @@ export async function chatOnce({ messages, temperature = 0.6, model = OPENROUTER
     'google/gemma-2-9b-it:free',
     'meta-llama/llama-3-8b-instruct:free',
     'qwen/qwen-2-7b-instruct:free',
-    'arcee-ai/trinity-large-thinking:free'
+    'cohere/north-mini-code:free'
   ];
   
   if (model && !modelsToTry.includes(model)) {

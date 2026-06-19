@@ -2,20 +2,20 @@
  * Firebase bootstrap — Afnan store
  *
  * Exports `auth` and `db` singletons used everywhere in the app.
- * Project ID: nora-3b35e
+ * Project ID: nora-144b1
  */
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyDfn1R9GXROoyiL06mWYQtKKOTh6TkkXag',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'nora-3b35e.firebaseapp.com',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'nora-3b35e',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'nora-3b35e.firebasestorage.app',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '30682239429',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:30682239429:web:740e6ab5d84308137bfbac',
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || 'G-H3DXDMG7Z8',
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyDRoWbA33FReJvPhnLtpcf9SnWVcQvV56c',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'nora-144b1.firebaseapp.com',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'nora-144b1',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'nora-144b1.firebasestorage.app',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '188647187523',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:188647187523:web:62a809403e5bfd959560f6',
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || 'G-NDM9TRTH0L',
 };
 
 export const app = initializeApp(firebaseConfig);

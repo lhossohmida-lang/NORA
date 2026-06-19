@@ -155,7 +155,7 @@ public/
 
 ## 🤖 ملاحظات الـ AI
 
-- **النموذج:** `arcee-ai/trinity-large-thinking:free` على OpenRouter.
+- **النموذج:** `cohere/north-mini-code:free` على OpenRouter.
 - **الـ Streaming** مفعّل في كل الشاتات (الحروف تظهر تباعاً).
 - **`withRetry`** يعيد المحاولة 3 مرّات لحالات 429/503 مع backoff 1s/2s.
 - **`sessionId`** ثابت في localStorage باسم `afnan_chat_session`.
