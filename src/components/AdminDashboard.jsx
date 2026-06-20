@@ -29,13 +29,14 @@ import {
 } from 'lucide-react';
 import {
   collection, deleteDoc, doc, onSnapshot, orderBy, query, updateDoc,
-  addDoc, serverTimestamp,
+  setDoc, serverTimestamp,
 } from 'firebase/firestore';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '../firebase.js';
 import { PRODUCT_CATEGORIES, categoryLabel } from './ClientStorefront.jsx';
 import { generateProductContent, getOrFetchApiKey, saveApiKeyToFirestore } from '../lib/openrouter.js';
 import { usePwaInstall } from '../lib/usePwaInstall.js';
+import { ALGERIA_WILAYAS } from '../lib/wilayas.js';
 import AdminAIAssistant from './AdminAIAssistant.jsx';
 
 const formatDZD = (n) =>
@@ -824,91 +825,70 @@ function EditProductModal({ product, onClose }) {
 
 /* ================================================================== *
  *  Delivery rates panel                                               *
- *  CRUD over the `deliveryRates` collection — each doc is a zone      *
- *  (wilaya / area) with a price in DZD.                               *
+ *  Lists all 58 Algerian wilayas; the admin just sets a price for     *
+ *  each. Prices live in the `deliveryRates` collection, one doc per   *
+ *  wilaya keyed by its official code.                                 *
  * ================================================================== */
 function DeliveryPanel({ rates, loading }) {
-  const [name, setName] = useState('');
-  const [price, setPrice] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(null);
+  const [search, setSearch] = useState('');
 
-  const add = async (e) => {
-    e?.preventDefault?.();
-    setError(null);
-    if (!name.trim()) { setError('اكتبي اسم المنطقة أو الولاية.'); return; }
-    setSaving(true);
-    try {
-      await addDoc(collection(db, 'deliveryRates'), {
-        name: name.trim(),
-        price: Number(price) || 0,
-        createdAt: serverTimestamp(),
-      });
-      setName('');
-      setPrice('');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSaving(false);
-    }
-  };
+  // Map saved prices by wilaya code (doc id) for quick lookup.
+  const priceByCode = useMemo(() => {
+    const m = {};
+    rates.forEach((r) => { m[r.id] = r.price ?? 0; });
+    return m;
+  }, [rates]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim();
+    if (!q) return ALGERIA_WILAYAS;
+    return ALGERIA_WILAYAS.filter((w) => w.name.includes(q) || w.code.includes(q));
+  }, [search]);
+
+  const pricedCount = useMemo(
+    () => ALGERIA_WILAYAS.filter((w) => Number(priceByCode[w.code]) > 0).length,
+    [priceByCode],
+  );
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold">أسعار التوصيل</h1>
-        <p className="text-ink/60 text-sm mt-1">أضيفي سعر التوصيل لكل ولاية أو منطقة</p>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold">أسعار التوصيل</h1>
+          <p className="text-ink/60 text-sm mt-1">حدّدي سعر التوصيل لكل ولاية من ولايات الجزائر الـ58</p>
+        </div>
+        <span className="text-xs text-ink/50 bg-white/70 rounded-full px-3 py-1.5">
+          {pricedCount} / {ALGERIA_WILAYAS.length} ولاية مُسعّرة
+        </span>
       </div>
 
-      {/* Add new rate */}
-      <form onSubmit={add} className="card p-5 space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-[1fr,auto,auto] gap-3 sm:items-end">
-          <div>
-            <label className="label">المنطقة / الولاية</label>
-            <input
-              className="field"
-              placeholder="مثال: الجزائر العاصمة"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="label">السعر (دج)</label>
-            <input
-              type="number"
-              className="field sm:w-36"
-              placeholder="0"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-            />
-          </div>
-          <button type="submit" disabled={saving} className="btn-primary h-[46px]">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-            إضافة
-          </button>
-        </div>
-        {error && <p className="text-sm text-blush">{error}</p>}
-      </form>
+      <div className="relative max-w-md">
+        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink/40" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="ابحثي عن ولاية..."
+          className="w-full rounded-full bg-white/70 border border-white/70 pr-10 pl-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sage/40"
+        />
+      </div>
 
-      {/* List */}
       {loading ? (
         <div className="card p-5 space-y-3 animate-pulse">
-          {Array.from({ length: 4 }).map((_, i) => (
+          {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="h-12 bg-cream rounded-2xl" />
           ))}
         </div>
-      ) : rates.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="card p-12 text-center">
           <div className="w-16 h-16 mx-auto rounded-full bg-cream flex items-center justify-center mb-3">
             <Truck className="w-7 h-7 text-ink/40" />
           </div>
-          <p className="font-bold">لا توجد أسعار توصيل بعد</p>
-          <p className="text-sm text-ink/60 mt-1">أضيفي أوّل منطقة من النموذج بالأعلى.</p>
+          <p className="font-bold">لا توجد ولاية بهذا الاسم</p>
         </div>
       ) : (
         <div className="card divide-y divide-cream">
-          {rates.map((r) => (
-            <DeliveryRow key={r.id} rate={r} />
+          {filtered.map((w) => (
+            <WilayaRow key={w.code} wilaya={w} savedPrice={priceByCode[w.code] ?? ''} />
           ))}
         </div>
       )}
@@ -916,58 +896,65 @@ function DeliveryPanel({ rates, loading }) {
   );
 }
 
-function DeliveryRow({ rate }) {
-  const [editing, setEditing] = useState(false);
-  const [name, setName] = useState(rate.name || '');
-  const [price, setPrice] = useState(rate.price ?? 0);
+function WilayaRow({ wilaya, savedPrice }) {
+  const [price, setPrice] = useState(savedPrice === '' ? '' : String(savedPrice));
   const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  // Keep the input in sync if the Firestore value changes elsewhere.
+  useEffect(() => {
+    setPrice(savedPrice === '' ? '' : String(savedPrice));
+  }, [savedPrice]);
+
+  const dirty = String(savedPrice ?? '') !== String(price ?? '');
 
   const save = async () => {
     setBusy(true);
+    setSaved(false);
     try {
-      await updateDoc(doc(db, 'deliveryRates', rate.id), {
-        name: name.trim(),
-        price: Number(price) || 0,
-        updatedAt: serverTimestamp(),
-      });
-      setEditing(false);
+      await setDoc(
+        doc(db, 'deliveryRates', wilaya.code),
+        {
+          code: wilaya.code,
+          name: wilaya.name,
+          price: Number(price) || 0,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      );
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1800);
     } finally {
       setBusy(false);
     }
   };
 
-  const remove = async () => {
-    if (!confirm(`حذف "${rate.name}"؟`)) return;
-    await deleteDoc(doc(db, 'deliveryRates', rate.id));
-  };
-
-  if (editing) {
-    return (
-      <div className="flex items-center gap-2 p-4">
-        <input className="field flex-1" value={name} onChange={(e) => setName(e.target.value)} />
-        <input type="number" className="field w-28" value={price} onChange={(e) => setPrice(e.target.value)} />
-        <button onClick={save} disabled={busy} className="w-10 h-10 rounded-xl bg-sage text-white flex items-center justify-center" aria-label="حفظ">
-          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-        </button>
-        <button onClick={() => setEditing(false)} className="w-10 h-10 rounded-xl bg-cream flex items-center justify-center" aria-label="إلغاء">
-          <X className="w-4 h-4" />
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex items-center gap-3 p-4">
-      <div className="w-9 h-9 rounded-xl bg-cream flex items-center justify-center shrink-0">
-        <Truck className="w-4 h-4 text-ink/50" />
+    <div className="flex items-center gap-3 p-3.5">
+      <div className="w-9 h-9 rounded-xl bg-cream flex items-center justify-center shrink-0 text-xs font-bold text-ink/60">
+        {wilaya.code}
       </div>
-      <p className="flex-1 font-semibold text-sm truncate">{rate.name}</p>
-      <span className="gradient-text font-bold">{formatDZD(rate.price)} دج</span>
-      <button onClick={() => setEditing(true)} className="w-9 h-9 rounded-xl bg-cream hover:bg-sage hover:text-white transition flex items-center justify-center" aria-label="تعديل">
-        <Pencil className="w-3.5 h-3.5" />
-      </button>
-      <button onClick={remove} className="w-9 h-9 rounded-xl bg-cream hover:bg-blush hover:text-white transition flex items-center justify-center" aria-label="حذف">
-        <Trash2 className="w-3.5 h-3.5" />
+      <p className="flex-1 font-semibold text-sm truncate">{wilaya.name}</p>
+      <div className="relative">
+        <input
+          type="number"
+          inputMode="numeric"
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter' && dirty) save(); }}
+          placeholder="0"
+          className="w-28 rounded-xl bg-white border border-cream pr-3 pl-10 py-2 text-sm text-left focus:outline-none focus:ring-2 focus:ring-sage/40"
+          dir="ltr"
+        />
+        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-ink/40">دج</span>
+      </div>
+      <button
+        onClick={save}
+        disabled={busy || !dirty}
+        className="w-10 h-10 rounded-xl bg-sage-blush text-white flex items-center justify-center shrink-0 disabled:opacity-40 transition"
+        aria-label="حفظ"
+      >
+        {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
       </button>
     </div>
   );
