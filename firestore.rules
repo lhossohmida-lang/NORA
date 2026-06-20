@@ -38,5 +38,13 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+
+    // deliveryRates:
+    // - Read: Accessible to anyone so the storefront can show delivery prices per zone.
+    // - Write: Restricted to authenticated admins to manage the rates.
+    match /deliveryRates/{rateId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
   }
 }

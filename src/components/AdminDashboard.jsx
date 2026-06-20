@@ -25,10 +25,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, ShoppingBag, Package, Wand2, Search, LogOut,
   Plus, Pencil, Trash2, Loader2, Sparkles, TrendingUp, Image as ImageIcon,
-  Eye, X, Save, ChevronLeft, EyeOff, Key, CheckCircle, Download,
+  Eye, X, Save, ChevronLeft, EyeOff, Key, CheckCircle, Download, Truck,
 } from 'lucide-react';
 import {
-  collection, deleteDoc, doc, onSnapshot, orderBy, query, updateDoc, serverTimestamp,
+  collection, deleteDoc, doc, onSnapshot, orderBy, query, updateDoc,
+  addDoc, serverTimestamp,
 } from 'firebase/firestore';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '../firebase.js';
@@ -44,6 +45,7 @@ const SECTIONS = [
   { key: 'overview', label: 'نظرة عامة', icon: LayoutDashboard },
   { key: 'orders',   label: 'الطلبات',  icon: ShoppingBag },
   { key: 'catalog',  label: 'الكتالوغ', icon: Package },
+  { key: 'delivery', label: 'أسعار التوصيل', icon: Truck },
   { key: 'ai',       label: 'AI Studio', icon: Wand2 },
 ];
 
@@ -84,6 +86,7 @@ export default function AdminDashboard() {
   const { items: products, loading: prodLoading } = useCollection('products', { orderField: 'createdAt' });
   const { items: orders } = useCollection('orders', { orderField: 'createdAt' });
   const { items: chatMessages } = useCollection('chatMessages', { orderField: 'createdAt' });
+  const { items: deliveryRates, loading: deliveryLoading } = useCollection('deliveryRates', { orderField: 'createdAt', direction: 'asc' });
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, setUser);
@@ -135,10 +138,15 @@ export default function AdminDashboard() {
                 search={search}
               />
             )}
+            {section === 'delivery' && (
+              <DeliveryPanel rates={deliveryRates} loading={deliveryLoading} />
+            )}
             {section === 'ai' && <AIStudioPanel />}
           </div>
         </main>
       </div>
+
+      <MobileBottomNav section={section} onPick={setSection} />
 
       <AdminAIAssistant
         products={products}
@@ -147,6 +155,37 @@ export default function AdminDashboard() {
         customerMessages={chatMessages}
       />
     </div>
+  );
+}
+
+/* ================================================================== *
+ *  Mobile bottom navigation                                           *
+ *  The sidebar is hidden < md, so on phones the same sections live in *
+ *  a floating, slightly tilted bar pinned to the bottom of the screen.*
+ * ================================================================== */
+function MobileBottomNav({ section, onPick }) {
+  return (
+    <nav className="md:hidden fixed inset-x-0 bottom-0 z-30 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pointer-events-none">
+      <div className="pointer-events-auto mx-auto max-w-md -rotate-2 origin-bottom rounded-[1.75rem] glass border border-white/60 shadow-glass px-2 py-2 flex items-center justify-between">
+        {SECTIONS.map((s) => {
+          const Icon = s.icon;
+          const on = section === s.key;
+          return (
+            <button
+              key={s.key}
+              onClick={() => onPick(s.key)}
+              className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-2xl text-[10px] font-medium transition ${
+                on ? 'bg-sage-blush text-white shadow-soft' : 'text-ink/60'
+              }`}
+              aria-label={s.label}
+            >
+              <Icon className="w-5 h-5" />
+              <span className="leading-none whitespace-nowrap">{s.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </nav>
   );
 }
 
@@ -716,6 +755,157 @@ function EditProductModal({ product, onClose }) {
         </>
       )}
     </AnimatePresence>
+  );
+}
+
+/* ================================================================== *
+ *  Delivery rates panel                                               *
+ *  CRUD over the `deliveryRates` collection — each doc is a zone      *
+ *  (wilaya / area) with a price in DZD.                               *
+ * ================================================================== */
+function DeliveryPanel({ rates, loading }) {
+  const [name, setName] = useState('');
+  const [price, setPrice] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  const add = async (e) => {
+    e?.preventDefault?.();
+    setError(null);
+    if (!name.trim()) { setError('اكتبي اسم المنطقة أو الولاية.'); return; }
+    setSaving(true);
+    try {
+      await addDoc(collection(db, 'deliveryRates'), {
+        name: name.trim(),
+        price: Number(price) || 0,
+        createdAt: serverTimestamp(),
+      });
+      setName('');
+      setPrice('');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl md:text-3xl font-bold">أسعار التوصيل</h1>
+        <p className="text-ink/60 text-sm mt-1">أضيفي سعر التوصيل لكل ولاية أو منطقة</p>
+      </div>
+
+      {/* Add new rate */}
+      <form onSubmit={add} className="card p-5 space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr,auto,auto] gap-3 sm:items-end">
+          <div>
+            <label className="label">المنطقة / الولاية</label>
+            <input
+              className="field"
+              placeholder="مثال: الجزائر العاصمة"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="label">السعر (دج)</label>
+            <input
+              type="number"
+              className="field sm:w-36"
+              placeholder="0"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+            />
+          </div>
+          <button type="submit" disabled={saving} className="btn-primary h-[46px]">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+            إضافة
+          </button>
+        </div>
+        {error && <p className="text-sm text-blush">{error}</p>}
+      </form>
+
+      {/* List */}
+      {loading ? (
+        <div className="card p-5 space-y-3 animate-pulse">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-12 bg-cream rounded-2xl" />
+          ))}
+        </div>
+      ) : rates.length === 0 ? (
+        <div className="card p-12 text-center">
+          <div className="w-16 h-16 mx-auto rounded-full bg-cream flex items-center justify-center mb-3">
+            <Truck className="w-7 h-7 text-ink/40" />
+          </div>
+          <p className="font-bold">لا توجد أسعار توصيل بعد</p>
+          <p className="text-sm text-ink/60 mt-1">أضيفي أوّل منطقة من النموذج بالأعلى.</p>
+        </div>
+      ) : (
+        <div className="card divide-y divide-cream">
+          {rates.map((r) => (
+            <DeliveryRow key={r.id} rate={r} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DeliveryRow({ rate }) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(rate.name || '');
+  const [price, setPrice] = useState(rate.price ?? 0);
+  const [busy, setBusy] = useState(false);
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      await updateDoc(doc(db, 'deliveryRates', rate.id), {
+        name: name.trim(),
+        price: Number(price) || 0,
+        updatedAt: serverTimestamp(),
+      });
+      setEditing(false);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async () => {
+    if (!confirm(`حذف "${rate.name}"؟`)) return;
+    await deleteDoc(doc(db, 'deliveryRates', rate.id));
+  };
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-2 p-4">
+        <input className="field flex-1" value={name} onChange={(e) => setName(e.target.value)} />
+        <input type="number" className="field w-28" value={price} onChange={(e) => setPrice(e.target.value)} />
+        <button onClick={save} disabled={busy} className="w-10 h-10 rounded-xl bg-sage text-white flex items-center justify-center" aria-label="حفظ">
+          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+        </button>
+        <button onClick={() => setEditing(false)} className="w-10 h-10 rounded-xl bg-cream flex items-center justify-center" aria-label="إلغاء">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-3 p-4">
+      <div className="w-9 h-9 rounded-xl bg-cream flex items-center justify-center shrink-0">
+        <Truck className="w-4 h-4 text-ink/50" />
+      </div>
+      <p className="flex-1 font-semibold text-sm truncate">{rate.name}</p>
+      <span className="gradient-text font-bold">{formatDZD(rate.price)} دج</span>
+      <button onClick={() => setEditing(true)} className="w-9 h-9 rounded-xl bg-cream hover:bg-sage hover:text-white transition flex items-center justify-center" aria-label="تعديل">
+        <Pencil className="w-3.5 h-3.5" />
+      </button>
+      <button onClick={remove} className="w-9 h-9 rounded-xl bg-cream hover:bg-blush hover:text-white transition flex items-center justify-center" aria-label="حذف">
+        <Trash2 className="w-3.5 h-3.5" />
+      </button>
+    </div>
   );
 }
 

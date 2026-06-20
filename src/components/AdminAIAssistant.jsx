@@ -159,7 +159,7 @@ export default function AdminAIAssistant({ products = [], orders = [], revenue =
         transition={{ type: 'spring', stiffness: 260, damping: 18, delay: 0.4 }}
         whileTap={{ scale: 0.92 }}
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-30 w-14 h-14 rounded-full bg-ink text-white shadow-bloom flex items-center justify-center"
+        className="fixed bottom-28 md:bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-ink text-white shadow-bloom flex items-center justify-center"
         aria-label="افتحي المساعدة الإدارية"
       >
         <Bot className="w-6 h-6" />
