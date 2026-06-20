@@ -25,7 +25,10 @@ export default defineConfig({
         orientation: 'portrait',
         dir: 'rtl',
         lang: 'ar',
-        start_url: '/',
+        // The app is installed from the admin panel, so launch straight into it.
+        // ProtectedRoute redirects to /admin/login when the session is signed out.
+        start_url: '/admin',
+        scope: '/',
         icons: [
           { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
