@@ -25,7 +25,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, ShoppingBag, Package, Wand2, Search, LogOut,
   Plus, Pencil, Trash2, Loader2, Sparkles, TrendingUp, Image as ImageIcon,
-  Eye, X, Save, ChevronLeft, EyeOff, Key, CheckCircle,
+  Eye, X, Save, ChevronLeft, EyeOff, Key, CheckCircle, Download,
 } from 'lucide-react';
 import {
   collection, deleteDoc, doc, onSnapshot, orderBy, query, updateDoc, serverTimestamp,
@@ -34,6 +34,7 @@ import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '../firebase.js';
 import { PRODUCT_CATEGORIES, categoryLabel } from './ClientStorefront.jsx';
 import { generateProductContent, getOrFetchApiKey, saveApiKeyToFirestore } from '../lib/openrouter.js';
+import { usePwaInstall } from '../lib/usePwaInstall.js';
 import AdminAIAssistant from './AdminAIAssistant.jsx';
 
 const formatDZD = (n) =>
@@ -195,7 +196,8 @@ function Sidebar({ section, onPick, onSignOut }) {
         })}
       </nav>
 
-      <div className="p-4 border-t border-cream">
+      <div className="p-4 border-t border-cream space-y-1">
+        <InstallAppButton />
         <button
           onClick={onSignOut}
           className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-ink/70 hover:bg-cream"
@@ -205,6 +207,66 @@ function Sidebar({ section, onPick, onSignOut }) {
         </button>
       </div>
     </aside>
+  );
+}
+
+/* ================================================================== *
+ *  Install-app button                                                 *
+ *  PWA install trigger. Hides itself once the app is installed or     *
+ *  when no install prompt is available (e.g. already installed).      *
+ * ================================================================== */
+function InstallAppButton() {
+  const { canInstall, promptInstall } = usePwaInstall();
+  const [busy, setBusy] = useState(false);
+
+  if (!canInstall) return null;
+
+  const handleClick = async () => {
+    setBusy(true);
+    try {
+      await promptInstall();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={busy}
+      className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium bg-sage-blush text-white shadow-soft hover:shadow-bloom transition disabled:opacity-60"
+    >
+      {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+      تحميل التطبيق
+    </button>
+  );
+}
+
+/* Compact install button for the mobile topbar (sidebar is hidden < md). */
+function InstallAppIconButton() {
+  const { canInstall, promptInstall } = usePwaInstall();
+  const [busy, setBusy] = useState(false);
+
+  if (!canInstall) return null;
+
+  const handleClick = async () => {
+    setBusy(true);
+    try {
+      await promptInstall();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={busy}
+      className="md:hidden w-9 h-9 rounded-full bg-sage-blush text-white flex items-center justify-center shadow-soft disabled:opacity-60"
+      aria-label="تحميل التطبيق"
+    >
+      {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+    </button>
   );
 }
 
@@ -229,6 +291,7 @@ function Topbar({ search, onSearch, user, onSignOut }) {
       </div>
 
       <div className="flex items-center gap-2">
+        <InstallAppIconButton />
         <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/70">
           <div className="w-7 h-7 rounded-full bg-sage-blush text-white flex items-center justify-center text-xs font-bold">
             {(user?.email?.[0] || 'A').toUpperCase()}
