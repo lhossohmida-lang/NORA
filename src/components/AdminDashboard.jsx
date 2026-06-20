@@ -310,6 +310,68 @@ function InstallAppIconButton() {
 }
 
 /* ================================================================== *
+ *  Install-app card (Overview)                                        *
+ *  A prominent, always-discoverable install entry point. Uses the     *
+ *  native prompt when the browser offers one, and falls back to a     *
+ *  short manual hint otherwise. Disappears entirely once installed.   *
+ * ================================================================== */
+function InstallAppCard() {
+  const { canInstall, isInstalled, promptInstall } = usePwaInstall();
+  const [busy, setBusy] = useState(false);
+  const [showHint, setShowHint] = useState(false);
+
+  // Once installed (or running standalone) the card vanishes — as requested.
+  if (isInstalled) return null;
+
+  const handleClick = async () => {
+    if (canInstall) {
+      setBusy(true);
+      try {
+        const outcome = await promptInstall();
+        if (outcome === 'unavailable') setShowHint(true);
+      } finally {
+        setBusy(false);
+      }
+    } else {
+      // No native prompt available (e.g. iOS Safari or criteria not met yet).
+      setShowHint((v) => !v);
+    }
+  };
+
+  return (
+    <div className="card p-5 border border-sage/30 bg-gradient-to-l from-sage/10 to-blush/10">
+      <div className="flex items-center gap-4">
+        <div className="w-12 h-12 rounded-2xl bg-sage-blush text-white flex items-center justify-center shrink-0">
+          <Download className="w-6 h-6" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-bold">تحميل التطبيق</p>
+          <p className="text-xs text-ink/60 mt-0.5">ثبّتي تطبيق أفنان على هاتفكِ للوصول السريع بدون متصفح.</p>
+        </div>
+        <button
+          onClick={handleClick}
+          disabled={busy}
+          className="btn-primary shrink-0 disabled:opacity-60"
+        >
+          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+          تحميل
+        </button>
+      </div>
+
+      {showHint && !canInstall && (
+        <div className="mt-4 text-xs text-ink/70 bg-white/60 rounded-2xl p-3 leading-relaxed">
+          إذا لم تظهر نافذة التثبيت تلقائياً:
+          <br />
+          • على <b>أندرويد / Chrome</b>: افتحي قائمة المتصفح (⋮) ← «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».
+          <br />
+          • على <b>آيفون / Safari</b>: اضغطي زر المشاركة (مربع وسهم) ← «إضافة إلى الشاشة الرئيسية».
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ================================================================== *
  *  Topbar                                                             *
  * ================================================================== */
 function Topbar({ search, onSearch, user, onSignOut }) {
@@ -359,6 +421,8 @@ function OverviewPanel({ products, orders, chatMessages, revenue30 }) {
         <h1 className="text-2xl md:text-3xl font-bold">نظرة عامة</h1>
         <p className="text-ink/60 text-sm mt-1">ملخّص نشاط متجر أفنان</p>
       </div>
+
+      <InstallAppCard />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <KPI label="إيرادات آخر 30 يوم" value={`${formatDZD(revenue30)} دج`} icon={TrendingUp} accent="from-sage to-blush" />
