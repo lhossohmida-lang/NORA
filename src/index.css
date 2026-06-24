@@ -13,6 +13,11 @@
   html, body, #root {
     height: 100%;
   }
+  /* Cinematic smooth scrolling for anchor jumps / scroll cues */
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+  }
   body {
     background: #FAF7F2;
     color: #2A2438;
@@ -180,5 +185,132 @@ input[type=number] {
 .animate-ice-refreeze {
   animation: ice-refreeze 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
   transition: none !important;
+}
+
+/* ================================================================== *
+ *  LUXURY CLIENT LAYER  (emerald + gold)                              *
+ *  Scoped to the customer storefront. The admin panel above is        *
+ *  untouched. All new classes are prefixed lux- / btn-gold / etc.     *
+ * ================================================================== */
+@layer components {
+  /* Surfaces ------------------------------------------------------- */
+  .lux-page   { @apply bg-ivory text-bark; }
+  .card-lux   { @apply rounded-[1.75rem] overflow-hidden bg-white border border-black/[0.04] shadow-lux-sm; }
+  .glass-lux  { @apply bg-white/70 backdrop-blur-xl border border-white/60 shadow-lux-sm; }
+  .glass-emerald {
+    @apply backdrop-blur-xl border border-white/10 text-ivory;
+    background: rgba(12, 59, 46, 0.55);
+  }
+
+  /* Buttons -------------------------------------------------------- */
+  .btn-gold {
+    @apply relative inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full
+           font-semibold text-forest bg-gold-fill shadow-gold
+           transition-transform duration-300 active:scale-[0.97] overflow-hidden;
+  }
+  .btn-emerald {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full
+           font-medium text-ivory bg-emerald-deep-grad shadow-lux-sm
+           transition-transform duration-300 active:scale-[0.97];
+  }
+  .btn-outline-gold {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full
+           font-medium text-gold-soft border border-gold/60 bg-white/5 backdrop-blur
+           transition-colors duration-300 hover:bg-gold/10;
+  }
+
+  /* Chips ---------------------------------------------------------- */
+  .chip-lux {
+    @apply relative px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap
+           transition-colors duration-300 z-10;
+  }
+  .chip-lux-on  { @apply text-forest; }
+  .chip-lux-off { @apply text-bark/60 hover:text-bark; }
+
+  /* Inputs --------------------------------------------------------- */
+  .field-lux {
+    @apply w-full rounded-full bg-white/80 border border-black/[0.06] px-5 py-3 text-sm
+           text-bark placeholder:text-bark/40 focus:outline-none focus:ring-2 focus:ring-gold/45
+           transition duration-300;
+  }
+}
+
+@layer utilities {
+  /* Shimmering gold text (wordmark, headlines, prices) */
+  .gold-text {
+    @apply bg-clip-text text-transparent;
+    background-image: theme('backgroundImage.gold-sheen');
+    background-size: 200% auto;
+    animation: goldSweep 5s linear infinite;
+  }
+  .gold-text-static {
+    @apply bg-clip-text text-transparent;
+    background-image: theme('backgroundImage.gold-fill');
+  }
+
+  .font-display { font-family: 'Cormorant Garamond', serif; }
+
+  /* Hairline gold divider */
+  .lux-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(198,160,82,0.7), transparent);
+  }
+
+  /* Ken-Burns slow drift for hero imagery */
+  .ken-burns { animation: kenBurns 18s ease-in-out infinite alternate; will-change: transform; }
+
+  /* Light sweep used on the splash wordmark + gold buttons.
+     Only clips the sweep (overflow) — it must NOT set `position`, or it would
+     override `fixed`/`absolute` on its host (e.g. the floating chat button).
+     Each host supplies its own positioning context (btn-gold is relative, the
+     FAB is fixed, the splash wordmark adds `relative`). */
+  .has-shine { overflow: hidden; }
+  .has-shine::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,0.55) 50%, transparent 70%);
+    transform: translateX(-120%) skewX(-18deg);
+    animation: shine 3s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  /* Clear, consistent keyboard focus across the storefront only (admin keeps
+     its own styles). `outline` survives the cards' overflow-hidden where a
+     box-shadow ring would be clipped. :where() keeps specificity low so a
+     component can still opt into a tighter ring. */
+  .lux-page :where(button, a, [role='button'], input, textarea, select):focus-visible {
+    outline: 2px solid theme('colors.gold');
+    outline-offset: 2px;
+  }
+}
+
+/* Plain keyframes (mirror the tailwind ones for utility classes) */
+@keyframes kenBurns {
+  0%   { transform: scale(1) translate3d(0,0,0); }
+  100% { transform: scale(1.12) translate3d(-1.5%, -1.5%, 0); }
+}
+@keyframes goldSweep {
+  0%   { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+@keyframes shine {
+  0%   { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
+  40%  { opacity: 0.5; }
+  100% { transform: translateX(220%) skewX(-18deg); opacity: 0; }
+}
+
+/* Respect reduced-motion: kill ambient looping animations.
+   Framer Motion entrance/exit is handled via <MotionConfig reducedMotion="user">. */
+@media (prefers-reduced-motion: reduce) {
+  .ken-burns,
+  .gold-text,
+  .has-shine::after,
+  .animate-float-y,
+  .animate-ken-burns,
+  .animate-gold-sweep,
+  .animate-shine {
+    animation: none !important;
+  }
+  .ken-burns { transform: none !important; }
 }
 

@@ -149,38 +149,38 @@ export default function AIChatWidget() {
         transition={{ type: 'spring', stiffness: 260, damping: 18, delay: 0.6 }}
         whileTap={{ scale: 0.92 }}
         onClick={() => setOpen(true)}
-        className="fixed bottom-24 left-5 z-30 w-14 h-14 rounded-full bg-sage-blush text-white
-                   shadow-bloom flex items-center justify-center"
+        className="fixed bottom-24 left-5 z-30 w-14 h-14 rounded-full bg-gold-fill text-forest
+                   shadow-gold has-shine flex items-center justify-center"
         aria-label="افتحي المساعدة الذكية"
       >
         <Sparkles className="w-6 h-6" />
-        <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-champagne animate-pulse" />
+        <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald animate-pulse" />
       </motion.button>
 
       <AnimatePresence>
         {open && (
           <>
             <motion.div
-              className="fixed inset-0 z-40 bg-ink/40 backdrop-blur-sm"
+              className="fixed inset-0 z-40 bg-forest/45 backdrop-blur-md"
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setOpen(false)}
             />
             <motion.div
               className="fixed inset-x-0 bottom-0 z-50 h-[80vh] flex flex-col
-                         rounded-t-[2.5rem] bg-pearl shadow-glass"
+                         rounded-t-[2.25rem] bg-ivory shadow-lux"
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', stiffness: 320, damping: 36 }}
             >
-              <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-cream">
+              <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-black/[0.05]">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-sage-blush flex items-center justify-center text-white">
+                  <div className="w-10 h-10 rounded-full bg-emerald-deep-grad flex items-center justify-center text-gold-soft">
                     <Bot className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="font-bold text-ink">مساعدة {STORE_NAME}</p>
-                    <p className="text-xs text-ink/50">{STORE_TAGLINE}</p>
+                    <p className="font-bold text-bark">مساعدة {STORE_NAME}</p>
+                    <p className="text-xs text-bark/50">{STORE_TAGLINE}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -188,7 +188,7 @@ export default function AIChatWidget() {
                     <button
                       onClick={() => setTtsOn((v) => !v)}
                       className={`w-9 h-9 rounded-full flex items-center justify-center transition ${
-                        ttsOn ? 'bg-sage-blush text-white' : 'bg-white/70 text-ink/60'
+                        ttsOn ? 'bg-emerald-deep-grad text-ivory' : 'bg-white/70 text-bark/60'
                       }`}
                       aria-label={ttsOn ? 'إيقاف الصوت' : 'تشغيل الصوت'}
                     >
@@ -208,11 +208,11 @@ export default function AIChatWidget() {
               <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
                 {messages.length === 0 && (
                   <div className="text-center py-10">
-                    <div className="w-16 h-16 mx-auto rounded-full bg-sage-blush flex items-center justify-center text-white mb-4">
+                    <div className="w-16 h-16 mx-auto rounded-full bg-emerald-deep-grad flex items-center justify-center text-gold-soft mb-4">
                       <Sparkles className="w-7 h-7" />
                     </div>
-                    <h3 className="font-bold text-ink">مرحبا حبيبتي 💕</h3>
-                    <p className="text-sm text-ink/60 mt-1">
+                    <h3 className="font-bold text-bark">مرحبا حبيبتي 💕</h3>
+                    <p className="text-sm text-bark/60 mt-1">
                       أنا هنا باش نعاونك تختاري الفستان المثالي.
                     </p>
                     <div className="mt-6 space-y-2 max-w-sm mx-auto">
@@ -220,7 +220,7 @@ export default function AIChatWidget() {
                         <button
                           key={t}
                           onClick={() => send(t)}
-                          className="block w-full text-right px-4 py-3 rounded-2xl glass text-sm text-ink hover:bg-white transition"
+                          className="block w-full text-right px-4 py-3 rounded-2xl glass-lux text-sm text-bark hover:bg-white transition"
                         >
                           {t}
                         </button>
@@ -234,20 +234,20 @@ export default function AIChatWidget() {
                 ))}
 
                 {streaming && messages[messages.length - 1]?.content === '' && (
-                  <div className="flex items-center gap-2 text-ink/50 text-sm">
+                  <div className="flex items-center gap-2 text-bark/50 text-sm">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     تكتب لكِ ردّاً...
                   </div>
                 )}
               </div>
 
-              <div className="border-t border-cream p-3 safe-bottom">
-                <div className="flex items-end gap-2 bg-white rounded-3xl p-2 shadow-glass">
+              <div className="border-t border-black/[0.05] p-3 safe-bottom">
+                <div className="flex items-end gap-2 bg-white rounded-3xl p-2 shadow-lux-sm">
                   {speech.supported && (
                     <button
                       onClick={toggleMic}
                       className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition ${
-                        speech.listening ? 'bg-blush text-white animate-pulse' : 'bg-cream text-ink/60'
+                        speech.listening ? 'bg-gold-fill text-forest animate-pulse' : 'bg-sand text-bark/60'
                       }`}
                       aria-label={speech.listening ? 'إيقاف التسجيل' : 'تسجيل صوتي'}
                     >
@@ -262,12 +262,12 @@ export default function AIChatWidget() {
                     }}
                     placeholder={speech.listening ? 'أنا أسمعك...' : 'اكتبي سؤالك هنا...'}
                     rows={1}
-                    className="flex-1 resize-none bg-transparent px-2 py-2 text-sm text-ink placeholder:text-ink/40 focus:outline-none max-h-32"
+                    className="flex-1 resize-none bg-transparent px-2 py-2 text-sm text-bark placeholder:text-bark/40 focus:outline-none max-h-32"
                   />
                   <button
                     onClick={() => send()}
                     disabled={!input.trim() || streaming}
-                    className="shrink-0 w-10 h-10 rounded-full bg-sage-blush text-white flex items-center justify-center disabled:opacity-40 active:scale-95"
+                    className="shrink-0 w-10 h-10 rounded-full bg-emerald-deep-grad text-ivory flex items-center justify-center disabled:opacity-40 active:scale-95"
                     aria-label="إرسال"
                   >
                     {streaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
@@ -293,8 +293,8 @@ function ChatBubble({ role, content }) {
       <div
         className={`max-w-[80%] px-4 py-2.5 rounded-3xl text-sm leading-relaxed whitespace-pre-wrap ${
           isUser
-            ? 'bg-sage-blush text-white rounded-bl-md'
-            : 'bg-white text-ink rounded-br-md shadow-glass'
+            ? 'bg-emerald-deep-grad text-ivory rounded-bl-md'
+            : 'bg-white text-bark rounded-br-md shadow-lux-sm'
         }`}
       >
         {content || '...'}

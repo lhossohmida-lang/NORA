@@ -7,14 +7,19 @@
  *   /admin/new   AIProductCreator    (ProtectedRoute)
  */
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { MotionConfig } from 'framer-motion';
 import ClientStorefront from './components/ClientStorefront.jsx';
 import AdminLogin from './components/AdminLogin.jsx';
 import AdminDashboard from './components/AdminDashboard.jsx';
 import AIProductCreator from './components/AIProductCreator.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
+import { EASE } from './lib/motion.js';
 
 export default function App() {
   return (
+    // One global motion context: honor the OS "reduce motion" setting and give
+    // every framer-motion transition the same premium default easing.
+    <MotionConfig reducedMotion="user" transition={{ ease: EASE }}>
     <Routes>
       <Route path="/" element={<ClientStorefront />} />
       <Route path="/admin/login" element={<AdminLogin />} />
@@ -36,5 +41,6 @@ export default function App() {
       />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </MotionConfig>
   );
 }
