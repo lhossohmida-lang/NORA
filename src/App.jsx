@@ -8,6 +8,7 @@
  */
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { MotionConfig } from 'framer-motion';
+import CinematicLanding from './components/CinematicLanding.jsx';
 import ClientStorefront from './components/ClientStorefront.jsx';
 import AdminLogin from './components/AdminLogin.jsx';
 import AdminDashboard from './components/AdminDashboard.jsx';
@@ -21,7 +22,8 @@ export default function App() {
     // every framer-motion transition the same premium default easing.
     <MotionConfig reducedMotion="user" transition={{ ease: EASE }}>
     <Routes>
-      <Route path="/" element={<ClientStorefront />} />
+      <Route path="/" element={<CinematicLanding />} />
+      <Route path="/shop" element={<ClientStorefront />} />
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route
         path="/admin"

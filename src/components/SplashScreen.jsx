@@ -42,18 +42,25 @@ export default function SplashScreen({ onFinish }) {
           transition={{ duration: 0.75, ease: [0.76, 0, 0.24, 1] }}
           onClick={dismiss}
         >
-          {/* Optional intro video (silently ignored when missing) */}
+          {/* Cinematic intro footage (silently falls back to the emerald base
+              if missing). Shown near-opaque so the boutique reads clearly. */}
           <video
             ref={videoRef}
             src={videoSrc}
+            poster="/splash/intro-poster.jpg"
             autoPlay
             muted
             playsInline
             onEnded={dismiss}
-            className="absolute inset-0 w-full h-full object-cover opacity-40"
+            className="absolute inset-0 w-full h-full object-cover opacity-90"
           />
-          {/* Emerald wash + soft gold vignette */}
-          <div className="absolute inset-0 bg-gradient-to-b from-forest/40 via-forest/60 to-forest/90" />
+          {/* Legibility scrim — dark at top & bottom, clear through the middle so
+              the footage shows, plus a soft center vignette to seat the wordmark. */}
+          <div className="absolute inset-0 bg-gradient-to-b from-forest/65 via-forest/15 to-forest/90" />
+          <div
+            className="absolute inset-0"
+            style={{ background: 'radial-gradient(75% 60% at 50% 45%, rgba(12,59,46,0.5), transparent 75%)' }}
+          />
           <motion.div
             className="absolute -inset-1/4 opacity-50"
             style={{ background: 'radial-gradient(closest-side, rgba(231,206,148,0.22), transparent)' }}
